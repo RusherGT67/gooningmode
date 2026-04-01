@@ -1,0 +1,221 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<title>Bitcoin Clicker</title>
+<style>
+body {
+    margin: 0;
+    font-family: Arial;
+    background: #111827;
+    color: white;
+}
+
+/* Layout */
+#container {
+    display: flex;
+    height: 100vh;
+}
+
+/* Left (Click Area) */
+#left {
+    width: 50%;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    border-right: 2px solid #333;
+}
+
+#coin {
+    width: 200px;
+    height: 200px;
+    background: orange;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 40px;
+    cursor: pointer;
+    transition: transform 0.1s;
+}
+#coin:active {
+    transform: scale(0.9);
+}
+
+/* Floating text */
+.float {
+    position: absolute;
+    color: gold;
+    font-weight: bold;
+    animation: floatUp 1s ease-out forwards;
+}
+@keyframes floatUp {
+    to {
+        transform: translateY(-80px);
+        opacity: 0;
+    }
+}
+
+/* Right (Shop) */
+#right {
+    width: 50%;
+    padding: 20px;
+    overflow-y: auto;
+}
+
+.shop-btn {
+    width: 100%;
+    padding: 10px;
+    margin: 5px 0;
+    background: #374151;
+    border: none;
+    color: white;
+    cursor: pointer;
+}
+.shop-btn:hover {
+    background: #4b5563;
+}
+
+/* Dev panel */
+#devPanel {
+    position: fixed;
+    bottom: 10px;
+    right: 10px;
+    background: black;
+    padding: 15px;
+    display: none;
+    border: 2px solid red;
+}
+</style>
+</head>
+<body>
+
+<div id="container">
+
+<div id="left">
+    <h1 id="btc">0 BTC</h1>
+    <div id="coin" onclick="mine(event)">₿</div>
+</div>
+
+<div id="right">
+    <h2>Upgrades</h2>
+    <button class="shop-btn" onclick="buyGPU()">GPU Miner (<span id="gpuCost">10</span>)</button>
+    <button class="shop-btn" onclick="buyASIC()">ASIC Miner (<span id="asicCost">100</span>)</button>
+    <button class="shop-btn" onclick="buyFarm()">Mining Farm (<span id="farmCost">1000</span>)</button>
+
+    <p>GPU: <span id="gpu">0</span></p>
+    <p>ASIC: <span id="asic">0</span></p>
+    <p>Farms: <span id="farm">0</span></p>
+</div>
+
+</div>
+
+<!-- DEV PANEL -->
+<div id="devPanel">
+    <h3>DEV PANEL</h3>
+    <button onclick="bitcoin += 1000">+1000 BTC</button><br><br>
+    <button onclick="gpu += 10">+10 GPU</button><br><br>
+    <button onclick="asic += 10">+10 ASIC</button><br><br>
+    <button onclick="farm += 10">+10 Farms</button>
+</div>
+
+<script>
+let bitcoin = 0;
+
+let gpu = 0, gpuCost = 10;
+let asic = 0, asicCost = 100;
+let farm = 0, farmCost = 1000;
+
+// Click
+function mine(e) {
+    bitcoin++;
+    showFloat("+1", e);
+    update();
+}
+
+// Floating text
+function showFloat(text, e) {
+    let div = document.createElement("div");
+    div.className = "float";
+    div.innerText = text;
+    div.style.left = e.pageX + "px";
+    div.style.top = e.pageY + "px";
+    document.body.appendChild(div);
+    setTimeout(() => div.remove(), 1000);
+}
+
+// Buy
+function buyGPU() {
+    if (bitcoin >= gpuCost) {
+        bitcoin -= gpuCost;
+        gpu++;
+        gpuCost = Math.floor(gpuCost * 1.5);
+        update();
+    }
+}
+
+function buyASIC() {
+    if (bitcoin >= asicCost) {
+        bitcoin -= asicCost;
+        asic++;
+        asicCost = Math.floor(asicCost * 1.6);
+        update();
+    }
+}
+
+function buyFarm() {
+    if (bitcoin >= farmCost) {
+        bitcoin -= farmCost;
+        farm++;
+        farmCost = Math.floor(farmCost * 1.8);
+        update();
+    }
+}
+
+// Auto income
+setInterval(() => {
+    bitcoin += gpu + (asic * 5) + (farm * 20);
+    update();
+}, 1000);
+
+// Save/load
+function save() {
+    localStorage.setItem("btcSave", JSON.stringify({bitcoin,gpu,asic,farm,gpuCost,asicCost,farmCost}));
+}
+function load() {
+    let s = JSON.parse(localStorage.getItem("btcSave"));
+    if (s) Object.assign(window, s);
+}
+setInterval(save, 5000);
+
+// Update UI
+function update() {
+    document.getElementById("btc").innerText = Math.floor(bitcoin) + " BTC";
+    document.getElementById("gpu").innerText = gpu;
+    document.getElementById("asic").innerText = asic;
+    document.getElementById("farm").innerText = farm;
+    document.getElementById("gpuCost").innerText = gpuCost;
+    document.getElementById("asicCost").innerText = asicCost;
+    document.getElementById("farmCost").innerText = farmCost;
+}
+
+// DEV PANEL (Ctrl + .)
+document.addEventListener("keydown", (e) => {
+    if (e.ctrlKey && e.key === ".") {
+        let pass = prompt("Enter dev password:");
+        if (pass === "gooninggub") {
+            document.getElementById("devPanel").style.display = "block";
+        } else {
+            alert("Wrong password");
+        }
+    }
+});
+
+// Start
+load();
+update();
+</script>
+
+</body>
+</html>
