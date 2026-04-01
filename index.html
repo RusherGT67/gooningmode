@@ -2,98 +2,156 @@
 <html lang="en">
 <head>
 <meta charset="UTF-8">
-<title>Bitcoin Clicker Deluxe</title>
+<title>Bitcoin Clicker</title>
 <style>
 body {
     margin: 0;
-    font-family: Arial, sans-serif;
-    background: #0f172a;
+    font-family: Arial;
+    background: #111827;
     color: white;
+}
+
+/* Layout */
+#container {
     display: flex;
-    justify-content: center;
-    align-items: center;
     height: 100vh;
 }
-#game {
-    text-align: center;
-    background: #1e293b;
-    padding: 25px;
-    border-radius: 15px;
-    width: 350px;
-    box-shadow: 0 0 20px rgba(0,0,0,0.5);
+
+/* Left (Click Area) */
+#left {
+    width: 50%;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    border-right: 2px solid #333;
 }
-button {
-    padding: 12px;
-    margin: 8px;
-    border: none;
-    border-radius: 10px;
+
+#coin {
+    width: 200px;
+    height: 200px;
+    background: orange;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 40px;
     cursor: pointer;
-    background: #f7931a;
-    font-weight: bold;
+    transition: transform 0.1s;
 }
-button:hover {
-    transform: scale(1.05);
+#coin:active {
+    transform: scale(0.9);
 }
-#btc {
-    font-size: 28px;
-    margin: 10px 0;
-}
-.achievement {
-    font-size: 12px;
+
+/* Floating text */
+.float {
+    position: absolute;
     color: gold;
+    font-weight: bold;
+    animation: floatUp 1s ease-out forwards;
+}
+@keyframes floatUp {
+    to {
+        transform: translateY(-80px);
+        opacity: 0;
+    }
+}
+
+/* Right (Shop) */
+#right {
+    width: 50%;
+    padding: 20px;
+    overflow-y: auto;
+}
+
+.shop-btn {
+    width: 100%;
+    padding: 10px;
+    margin: 5px 0;
+    background: #374151;
+    border: none;
+    color: white;
+    cursor: pointer;
+}
+.shop-btn:hover {
+    background: #4b5563;
+}
+
+/* Dev panel */
+#devPanel {
+    position: fixed;
+    bottom: 10px;
+    right: 10px;
+    background: black;
+    padding: 15px;
+    display: none;
+    border: 2px solid red;
 }
 </style>
 </head>
 <body>
 
-<div id="game">
-    <h1>₿ Bitcoin Clicker</h1>
-    <div id="btc">0 BTC</div>
-    <button onclick="mineBitcoin()">⛏ Mine Bitcoin</button>
+<div id="container">
 
-    <h3>Upgrades</h3>
-    <button onclick="buyGPU()">GPU Miner (<span id="gpuCost">10</span>)</button><br>
-    <button onclick="buyASIC()">ASIC Miner (<span id="asicCost">100</span>)</button><br>
-    <button onclick="buyFarm()">Mining Farm (<span id="farmCost">1000</span>)</button>
+<div id="left">
+    <h1 id="btc">0 BTC</h1>
+    <div id="coin" onclick="mine(event)">₿</div>
+</div>
 
-    <p>GPU: <span id="gpu">0</span> | ASIC: <span id="asic">0</span> | Farms: <span id="farm">0</span></p>
+<div id="right">
+    <h2>Upgrades</h2>
+    <button class="shop-btn" onclick="buyGPU()">GPU Miner (<span id="gpuCost">10</span>)</button>
+    <button class="shop-btn" onclick="buyASIC()">ASIC Miner (<span id="asicCost">100</span>)</button>
+    <button class="shop-btn" onclick="buyFarm()">Mining Farm (<span id="farmCost">1000</span>)</button>
 
-    <h3>Achievements</h3>
-    <div id="achievements"></div>
+    <p>GPU: <span id="gpu">0</span></p>
+    <p>ASIC: <span id="asic">0</span></p>
+    <p>Farms: <span id="farm">0</span></p>
+</div>
+
+</div>
+
+<!-- DEV PANEL -->
+<div id="devPanel">
+    <h3>DEV PANEL</h3>
+    <button onclick="bitcoin += 1000">+1000 BTC</button><br><br>
+    <button onclick="gpu += 10">+10 GPU</button><br><br>
+    <button onclick="asic += 10">+10 ASIC</button><br><br>
+    <button onclick="farm += 10">+10 Farms</button>
 </div>
 
 <script>
-// Game data
 let bitcoin = 0;
-let btcPerClick = 1;
 
 let gpu = 0, gpuCost = 10;
 let asic = 0, asicCost = 100;
 let farm = 0, farmCost = 1000;
 
-let achievements = [];
-
-// Sound
-function playSound() {
-    let audio = new Audio("https://actions.google.com/sounds/v1/cartoon/wood_plank_flicks.ogg");
-    audio.play();
+// Click
+function mine(e) {
+    bitcoin++;
+    showFloat("+1", e);
+    update();
 }
 
-// Click mining
-function mineBitcoin() {
-    bitcoin += btcPerClick;
-    playSound();
-    checkAchievements();
-    updateDisplay();
+// Floating text
+function showFloat(text, e) {
+    let div = document.createElement("div");
+    div.className = "float";
+    div.innerText = text;
+    div.style.left = e.pageX + "px";
+    div.style.top = e.pageY + "px";
+    document.body.appendChild(div);
+    setTimeout(() => div.remove(), 1000);
 }
 
-// Buy upgrades
+// Buy
 function buyGPU() {
     if (bitcoin >= gpuCost) {
         bitcoin -= gpuCost;
         gpu++;
         gpuCost = Math.floor(gpuCost * 1.5);
-        updateDisplay();
+        update();
     }
 }
 
@@ -102,7 +160,7 @@ function buyASIC() {
         bitcoin -= asicCost;
         asic++;
         asicCost = Math.floor(asicCost * 1.6);
-        updateDisplay();
+        update();
     }
 }
 
@@ -111,79 +169,52 @@ function buyFarm() {
         bitcoin -= farmCost;
         farm++;
         farmCost = Math.floor(farmCost * 1.8);
-        updateDisplay();
+        update();
     }
 }
 
-// Auto mining
+// Auto income
 setInterval(() => {
-    bitcoin += gpu * 1 + asic * 5 + farm * 20;
-    checkAchievements();
-    updateDisplay();
+    bitcoin += gpu + (asic * 5) + (farm * 20);
+    update();
 }, 1000);
 
-// Achievements
-function checkAchievements() {
-    if (bitcoin >= 50 && !achievements.includes("50 BTC")) {
-        achievements.push("50 BTC");
-        showAchievement("Earned 50 BTC!");
-    }
-    if (bitcoin >= 500 && !achievements.includes("500 BTC")) {
-        achievements.push("500 BTC");
-        showAchievement("Earned 500 BTC!");
-    }
-    if (bitcoin >= 5000 && !achievements.includes("5000 BTC")) {
-        achievements.push("5000 BTC");
-        showAchievement("Earned 5000 BTC!");
-    }
+// Save/load
+function save() {
+    localStorage.setItem("btcSave", JSON.stringify({bitcoin,gpu,asic,farm,gpuCost,asicCost,farmCost}));
 }
-
-function showAchievement(text) {
-    let div = document.createElement("div");
-    div.className = "achievement";
-    div.innerText = "🏆 " + text;
-    document.getElementById("achievements").appendChild(div);
+function load() {
+    let s = JSON.parse(localStorage.getItem("btcSave"));
+    if (s) Object.assign(window, s);
 }
-
-// Save system
-function saveGame() {
-    localStorage.setItem("btcGameSave", JSON.stringify({
-        bitcoin, gpu, asic, farm, gpuCost, asicCost, farmCost, achievements
-    }));
-}
-
-function loadGame() {
-    let save = JSON.parse(localStorage.getItem("btcGameSave"));
-    if (save) {
-        bitcoin = save.bitcoin;
-        gpu = save.gpu;
-        asic = save.asic;
-        farm = save.farm;
-        gpuCost = save.gpuCost;
-        asicCost = save.asicCost;
-        farmCost = save.farmCost;
-        achievements = save.achievements || [];
-    }
-}
-
-// Auto save every 5 seconds
-setInterval(saveGame, 5000);
+setInterval(save, 5000);
 
 // Update UI
-function updateDisplay() {
+function update() {
     document.getElementById("btc").innerText = Math.floor(bitcoin) + " BTC";
     document.getElementById("gpu").innerText = gpu;
     document.getElementById("asic").innerText = asic;
     document.getElementById("farm").innerText = farm;
-
     document.getElementById("gpuCost").innerText = gpuCost;
     document.getElementById("asicCost").innerText = asicCost;
     document.getElementById("farmCost").innerText = farmCost;
 }
 
-// Start game
-loadGame();
-updateDisplay();
+// DEV PANEL (Ctrl + .)
+document.addEventListener("keydown", (e) => {
+    if (e.ctrlKey && e.key === ".") {
+        let pass = prompt("Enter dev password:");
+        if (pass === "gooninggub") {
+            document.getElementById("devPanel").style.display = "block";
+        } else {
+            alert("Wrong password");
+        }
+    }
+});
+
+// Start
+load();
+update();
 </script>
 
 </body>
