@@ -1,0 +1,190 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<title>Bitcoin Clicker Deluxe</title>
+<style>
+body {
+    margin: 0;
+    font-family: Arial, sans-serif;
+    background: #0f172a;
+    color: white;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    height: 100vh;
+}
+#game {
+    text-align: center;
+    background: #1e293b;
+    padding: 25px;
+    border-radius: 15px;
+    width: 350px;
+    box-shadow: 0 0 20px rgba(0,0,0,0.5);
+}
+button {
+    padding: 12px;
+    margin: 8px;
+    border: none;
+    border-radius: 10px;
+    cursor: pointer;
+    background: #f7931a;
+    font-weight: bold;
+}
+button:hover {
+    transform: scale(1.05);
+}
+#btc {
+    font-size: 28px;
+    margin: 10px 0;
+}
+.achievement {
+    font-size: 12px;
+    color: gold;
+}
+</style>
+</head>
+<body>
+
+<div id="game">
+    <h1>₿ Bitcoin Clicker</h1>
+    <div id="btc">0 BTC</div>
+    <button onclick="mineBitcoin()">⛏ Mine Bitcoin</button>
+
+    <h3>Upgrades</h3>
+    <button onclick="buyGPU()">GPU Miner (<span id="gpuCost">10</span>)</button><br>
+    <button onclick="buyASIC()">ASIC Miner (<span id="asicCost">100</span>)</button><br>
+    <button onclick="buyFarm()">Mining Farm (<span id="farmCost">1000</span>)</button>
+
+    <p>GPU: <span id="gpu">0</span> | ASIC: <span id="asic">0</span> | Farms: <span id="farm">0</span></p>
+
+    <h3>Achievements</h3>
+    <div id="achievements"></div>
+</div>
+
+<script>
+// Game data
+let bitcoin = 0;
+let btcPerClick = 1;
+
+let gpu = 0, gpuCost = 10;
+let asic = 0, asicCost = 100;
+let farm = 0, farmCost = 1000;
+
+let achievements = [];
+
+// Sound
+function playSound() {
+    let audio = new Audio("https://actions.google.com/sounds/v1/cartoon/wood_plank_flicks.ogg");
+    audio.play();
+}
+
+// Click mining
+function mineBitcoin() {
+    bitcoin += btcPerClick;
+    playSound();
+    checkAchievements();
+    updateDisplay();
+}
+
+// Buy upgrades
+function buyGPU() {
+    if (bitcoin >= gpuCost) {
+        bitcoin -= gpuCost;
+        gpu++;
+        gpuCost = Math.floor(gpuCost * 1.5);
+        updateDisplay();
+    }
+}
+
+function buyASIC() {
+    if (bitcoin >= asicCost) {
+        bitcoin -= asicCost;
+        asic++;
+        asicCost = Math.floor(asicCost * 1.6);
+        updateDisplay();
+    }
+}
+
+function buyFarm() {
+    if (bitcoin >= farmCost) {
+        bitcoin -= farmCost;
+        farm++;
+        farmCost = Math.floor(farmCost * 1.8);
+        updateDisplay();
+    }
+}
+
+// Auto mining
+setInterval(() => {
+    bitcoin += gpu * 1 + asic * 5 + farm * 20;
+    checkAchievements();
+    updateDisplay();
+}, 1000);
+
+// Achievements
+function checkAchievements() {
+    if (bitcoin >= 50 && !achievements.includes("50 BTC")) {
+        achievements.push("50 BTC");
+        showAchievement("Earned 50 BTC!");
+    }
+    if (bitcoin >= 500 && !achievements.includes("500 BTC")) {
+        achievements.push("500 BTC");
+        showAchievement("Earned 500 BTC!");
+    }
+    if (bitcoin >= 5000 && !achievements.includes("5000 BTC")) {
+        achievements.push("5000 BTC");
+        showAchievement("Earned 5000 BTC!");
+    }
+}
+
+function showAchievement(text) {
+    let div = document.createElement("div");
+    div.className = "achievement";
+    div.innerText = "🏆 " + text;
+    document.getElementById("achievements").appendChild(div);
+}
+
+// Save system
+function saveGame() {
+    localStorage.setItem("btcGameSave", JSON.stringify({
+        bitcoin, gpu, asic, farm, gpuCost, asicCost, farmCost, achievements
+    }));
+}
+
+function loadGame() {
+    let save = JSON.parse(localStorage.getItem("btcGameSave"));
+    if (save) {
+        bitcoin = save.bitcoin;
+        gpu = save.gpu;
+        asic = save.asic;
+        farm = save.farm;
+        gpuCost = save.gpuCost;
+        asicCost = save.asicCost;
+        farmCost = save.farmCost;
+        achievements = save.achievements || [];
+    }
+}
+
+// Auto save every 5 seconds
+setInterval(saveGame, 5000);
+
+// Update UI
+function updateDisplay() {
+    document.getElementById("btc").innerText = Math.floor(bitcoin) + " BTC";
+    document.getElementById("gpu").innerText = gpu;
+    document.getElementById("asic").innerText = asic;
+    document.getElementById("farm").innerText = farm;
+
+    document.getElementById("gpuCost").innerText = gpuCost;
+    document.getElementById("asicCost").innerText = asicCost;
+    document.getElementById("farmCost").innerText = farmCost;
+}
+
+// Start game
+loadGame();
+updateDisplay();
+</script>
+
+</body>
+</html>
