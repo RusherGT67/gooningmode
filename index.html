@@ -1,0 +1,672 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+<title>Bitcoin Clicker</title>
+<style>
+  body {
+    background-color: #1a1a2e;
+    color: white;
+    font-family: Arial, sans-serif;
+    text-align: center;
+    padding: 20px;
+  }
+  h1 { font-size: 2em; margin-bottom: 10px; }
+  #coin {
+    font-size: 5em;
+    cursor: pointer;
+    user-select: none;
+    transition: transform 0.1s;
+    display: inline-block;
+  }
+  #coin:active { transform: scale(0.9); }
+  #btcCount { font-size: 1.5em; margin: 10px 0; }
+  .section {
+    background: #16213e;
+    border-radius: 10px;
+    padding: 15px;
+    margin: 15px auto;
+    max-width: 400px;
+    text-align: left;
+  }
+  .section h2 { text-align: center; margin-bottom: 10px; font-size: 1.1em; }
+  .upg-row {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin: 8px 0;
+  }
+  .upg-info { font-size: 0.9em; }
+  .upg-cost { font-size: 0.75em; color: #f0a500; }
+  .upg-owned { font-size: 0.75em; color: #aaa; }
+  button {
+    background: #0f3460;
+    color: white;
+    border: none;
+    padding: 6px 14px;
+    border-radius: 6px;
+    cursor: pointer;
+    font-size: 0.8em;
+  }
+  button:hover { background: #e94560; }
+  button:disabled { opacity: 0.4; cursor: not-allowed; background: #0f3460; }
+  .job-row {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin: 8px 0;
+    padding: 6px;
+    border-radius: 6px;
+    cursor: pointer;
+    transition: background 0.15s;
+  }
+  .job-row:hover { background: #0f3460; }
+  .job-left { font-size: 0.85em; }
+  .job-reward { font-size: 0.72em; color: #f0a500; }
+  .job-cd { font-size: 0.72em; color: #aaa; min-width: 50px; text-align: right; }
+  .save-row { display: flex; gap: 8px; justify-content: center; margin-top: 8px; flex-wrap: wrap; }
+  .save-time { font-size: 0.7em; color: #aaa; margin-top: 6px; text-align: center; }
+  .stats { font-size: 0.8em; color: #aaa; margin: 4px 0; }
+  .toast {
+    position: fixed; bottom: 20px; left: 50%; transform: translateX(-50%);
+    background: #0f3460; color: white; padding: 8px 18px; border-radius: 8px;
+    font-size: 0.85em; opacity: 0; transition: opacity 0.3s; pointer-events: none;
+    z-index: 9999; white-space: nowrap;
+  }
+  .toast.show { opacity: 1; }
+  .overlay-bg {
+    display: none; position: fixed; inset: 0; background: #00000099; z-index: 1000;
+  }
+  .overlay-bg.open { display: block; }
+  .modal {
+    display: none; position: fixed; top: 50%; left: 50%;
+    transform: translate(-50%,-50%); background: #16213e;
+    border: 2px solid #0f3460; border-radius: 12px; padding: 24px;
+    z-index: 1001; min-width: 280px; text-align: center; max-height: 90vh; overflow-y: auto;
+  }
+  .modal.open { display: block; }
+  .modal h3 { margin-bottom: 14px; font-size: 1em; }
+  .modal input {
+    width: 100%; background: #1a1a2e; border: 1px solid #0f3460;
+    color: white; font-size: 0.9em; padding: 7px 10px; border-radius: 6px;
+    outline: none; margin-bottom: 8px; box-sizing: border-box;
+  }
+  .modal input:focus { border-color: #e94560; }
+  .modal-err { font-size: 0.72em; color: #e94560; min-height: 14px; margin-bottom: 6px; }
+  .modal-ok { font-size: 0.72em; color: #4caf50; min-height: 14px; margin-bottom: 6px; }
+  .dev-btn {
+    display: block; width: 100%; margin-bottom: 7px;
+    background: #0f3460; text-align: left;
+  }
+  .dev-btn:hover { background: #e94560; }
+  .close-link { font-size: 0.72em; color: #aaa; cursor: pointer; margin-top: 6px; display: block; }
+  .close-link:hover { color: white; }
+  .tab-row { display: flex; gap: 6px; margin-bottom: 12px; justify-content: center; }
+  .tab-btn { font-size: 0.8em; padding: 5px 14px; }
+  .tab-btn.active { background: #e94560; }
+
+  /* Auth screen */
+  #authScreen { max-width: 340px; margin: 40px auto; }
+  #authScreen .auth-tabs { display: flex; gap: 8px; margin-bottom: 16px; justify-content: center; }
+  #authScreen input {
+    width: 100%; background: #16213e; border: 1px solid #0f3460;
+    color: white; font-size: 0.9em; padding: 8px 12px; border-radius: 6px;
+    outline: none; margin-bottom: 10px; box-sizing: border-box;
+  }
+  #authScreen input:focus { border-color: #e94560; }
+  #authScreen .auth-err { font-size: 0.75em; color: #e94560; min-height: 16px; margin-bottom: 8px; }
+  #authScreen button { width: 100%; padding: 9px; font-size: 0.9em; }
+
+  /* Game screen hidden by default */
+  #gameScreen { display: none; }
+
+  /* Leaderboard */
+  .lb-row {
+    display: flex; justify-content: space-between; align-items: center;
+    padding: 5px 4px; border-bottom: 1px solid #0f3460; font-size: 0.82em;
+  }
+  .lb-row:last-child { border-bottom: none; }
+  .lb-rank { color: #aaa; min-width: 24px; }
+  .lb-name { flex: 1; padding: 0 8px; }
+  .lb-you { color: #f0a500; font-weight: bold; }
+  .lb-btc { color: #4caf50; text-align: right; }
+  .lb-empty { font-size: 0.8em; color: #aaa; text-align: center; padding: 10px 0; }
+
+  /* Online players */
+  .online-dot { display: inline-block; width: 8px; height: 8px; background: #4caf50; border-radius: 50%; margin-right: 5px; }
+  .online-row {
+    display: flex; align-items: center; padding: 4px 2px;
+    font-size: 0.82em; border-bottom: 1px solid #0f3460;
+  }
+  .online-row:last-child { border-bottom: none; }
+  .online-name { flex: 1; }
+  .online-btc { color: #aaa; font-size: 0.85em; }
+  #onlineCount { font-size: 0.75em; color: #4caf50; }
+
+  /* Troll store */
+  .troll-row {
+    display: flex; justify-content: space-between; align-items: center;
+    margin: 8px 0; padding: 7px 6px; border-radius: 6px;
+    border-bottom: 1px solid #0f3460;
+  }
+  .troll-row:last-child { border-bottom: none; }
+  .troll-info { font-size: 0.85em; flex: 1; }
+  .troll-desc { font-size: 0.7em; color: #aaa; margin-top: 2px; }
+  .troll-cost { font-size: 0.72em; color: #e94560; }
+  .troll-owned { font-size: 0.7em; color: #aaa; margin-left: 4px; }
+  .troll-effect { font-size: 0.7em; color: #f0a500; margin-top: 2px; }
+
+  /* Username display */
+  #userBar {
+    font-size: 0.82em; color: #aaa; margin-bottom: 8px;
+    display: flex; justify-content: center; align-items: center; gap: 10px;
+  }
+  #userBar span { color: #f0a500; }
+</style>
+</head>
+<body>
+
+<!-- ===== AUTH SCREEN ===== -->
+<div id="authScreen">
+  <h1>&#x20BF; Bitcoin Clicker</h1>
+  <div class="auth-tabs">
+    <button id="tabLogin" class="tab-btn active" onclick="switchAuthTab('login')">Login</button>
+    <button id="tabRegister" class="tab-btn" onclick="switchAuthTab('register')">Register</button>
+  </div>
+  <div id="loginForm">
+    <input type="text" id="loginUser" placeholder="Username" autocomplete="username"/>
+    <input type="password" id="loginPass" placeholder="Password" autocomplete="current-password"/>
+    <div class="auth-err" id="loginErr"></div>
+    <button id="loginBtn">Login</button>
+  </div>
+  <div id="registerForm" style="display:none">
+    <input type="text" id="regUser" placeholder="Username (3-20 chars, letters/numbers/_)" autocomplete="username"/>
+    <input type="password" id="regPass" placeholder="Password (6+ chars)" autocomplete="new-password"/>
+    <input type="password" id="regPass2" placeholder="Confirm password" autocomplete="new-password"/>
+    <div class="auth-err" id="regErr"></div>
+    <button id="registerBtn">Create Account</button>
+  </div>
+  <div style="font-size:0.7em;color:#555;margin-top:14px;" id="serverNote"></div>
+</div>
+
+<!-- ===== GAME SCREEN ===== -->
+<div id="gameScreen">
+  <h1>&#x20BF; Bitcoin Clicker</h1>
+  <div id="userBar">Playing as <span id="usernameDisplay">-</span> <button style="padding:3px 10px;font-size:0.75em;" id="logoutBtn">Logout</button></div>
+  <div id="btcCount">0 BTC</div>
+  <div class="stats">Rate: <span id="rateDisp">0</span>/s &nbsp;|&nbsp; Click: +0.000001</div>
+  <div id="coin">&#x20BF;</div>
+
+  <!-- Upgrades -->
+  <div class="section">
+    <h2>Upgrades</h2>
+    <div class="upg-row">
+      <div class="upg-info">GPU Miner <span class="upg-owned" id="gpuOwned">(0)</span><div class="upg-cost" id="gpuCost">Cost: 10 BTC</div></div>
+      <button id="buyGpu">Buy</button>
+    </div>
+    <div class="upg-row">
+      <div class="upg-info">ASIC Miner <span class="upg-owned" id="asicOwned">(0)</span><div class="upg-cost" id="asicCost">Cost: 100 BTC</div></div>
+      <button id="buyAsic">Buy</button>
+    </div>
+    <div class="upg-row">
+      <div class="upg-info">Mining Farm <span class="upg-owned" id="farmOwned">(0)</span><div class="upg-cost" id="farmCost">Cost: 1000 BTC</div></div>
+      <button id="buyFarm">Buy</button>
+    </div>
+  </div>
+
+  <!-- Job Applications -->
+  <div class="section">
+    <h2>Job Applications</h2>
+    <div class="job-row" id="job0"><div class="job-left">&#128196; Fast Food Cashier<div class="job-reward">+0.00599900 BTC</div></div><div class="job-cd" id="jcd0">Ready</div></div>
+    <div class="job-row" id="job1"><div class="job-left">&#128187; Junior Dev Position<div class="job-reward">+0.00599900 BTC</div></div><div class="job-cd" id="jcd1">Ready</div></div>
+    <div class="job-row" id="job2"><div class="job-left">&#128198; Crypto Intern<div class="job-reward">+0.00599900 BTC</div></div><div class="job-cd" id="jcd2">Ready</div></div>
+    <div class="job-row" id="job3"><div class="job-left">&#128084; Office Manager<div class="job-reward">+0.00599900 BTC</div></div><div class="job-cd" id="jcd3">Ready</div></div>
+  </div>
+
+  <!-- Troll Store -->
+  <div class="section">
+    <h2>&#128120; Troll Store</h2>
+    <div class="troll-row">
+      <div class="troll-info">
+        Laser Eyes
+        <div class="troll-desc">Makes your &#x20BF; icon shoot lasers</div>
+        <div class="troll-effect">+0.000005 per click bonus</div>
+        <div class="troll-cost">Cost: 50 BTC</div>
+      </div>
+      <div><span class="troll-owned" id="ownLaser"></span><button id="buyLaser">Buy</button></div>
+    </div>
+    <div class="troll-row">
+      <div class="troll-info">
+        Diamond Hands &#x1F48E;
+        <div class="troll-desc">You literally cannot sell</div>
+        <div class="troll-effect">x1.5 click multiplier</div>
+        <div class="troll-cost">Cost: 200 BTC</div>
+      </div>
+      <div><span class="troll-owned" id="ownDiamond"></span><button id="buyDiamond">Buy</button></div>
+    </div>
+    <div class="troll-row">
+      <div class="troll-info">
+        Elon Tweet &#x1F426;
+        <div class="troll-desc">Post a fake tweet, pump the price</div>
+        <div class="troll-effect">+500 BTC instantly</div>
+        <div class="troll-cost">Cost: 999 BTC</div>
+      </div>
+      <div><button id="buyElon">Buy</button></div>
+    </div>
+    <div class="troll-row">
+      <div class="troll-info">
+        Moon Rocket &#x1F680;
+        <div class="troll-desc">We're going to the moon, fr</div>
+        <div class="troll-effect">x2 passive rate</div>
+        <div class="troll-cost">Cost: 5000 BTC</div>
+      </div>
+      <div><span class="troll-owned" id="ownRocket"></span><button id="buyRocket">Buy</button></div>
+    </div>
+    <div class="troll-row">
+      <div class="troll-info">
+        Wojak Tears &#x1F972;
+        <div class="troll-desc">Cry your way to profit</div>
+        <div class="troll-effect">+0.01/s passive</div>
+        <div class="troll-cost">Cost: 300 BTC</div>
+      </div>
+      <div><span class="troll-owned" id="ownWojak"></span><button id="buyWojak">Buy</button></div>
+    </div>
+    <div class="troll-row">
+      <div class="troll-info">
+        Rug Pull Insurance &#x1F9F9;
+        <div class="troll-desc">Useless but sounds official</div>
+        <div class="troll-effect">+5 BTC/s passive</div>
+        <div class="troll-cost">Cost: 10000 BTC</div>
+      </div>
+      <div><span class="troll-owned" id="ownRug"></span><button id="buyRug">Buy</button></div>
+    </div>
+  </div>
+
+  <!-- Online Players -->
+  <div class="section">
+    <h2>&#x1F7E2; Online Players &nbsp;<span id="onlineCount"></span></h2>
+    <div id="onlineList"><div class="lb-empty">Loading...</div></div>
+  </div>
+
+  <!-- Leaderboard -->
+  <div class="section">
+    <h2>&#x1F3C6; Leaderboard</h2>
+    <div id="leaderboardList"><div class="lb-empty">Loading...</div></div>
+    <div style="text-align:center;margin-top:8px;"><button style="font-size:0.75em;padding:4px 12px;" id="refreshLb">&#x21BB; Refresh</button></div>
+  </div>
+
+  <!-- Save -->
+  <div class="section">
+    <h2>Save</h2>
+    <div class="save-row">
+      <button id="saveBtn">&#128190; Save</button>
+      <button id="resetBtn">&#128465; Reset</button>
+    </div>
+    <div class="save-time" id="saveTime">Not saved yet</div>
+  </div>
+</div>
+
+<!-- Dev password modal -->
+<div class="overlay-bg" id="overlayBg"></div>
+<div class="modal" id="pwModal">
+  <h3>&#128274; DEV ACCESS</h3>
+  <input type="password" id="pwInput" placeholder="Password..."/>
+  <div class="modal-err" id="pwErr"></div>
+  <button id="pwSubmit" style="width:100%">Unlock</button>
+</div>
+<div class="modal" id="devModal">
+  <h3>&#9881; DEV CONSOLE</h3>
+  <button class="dev-btn" id="d1">+ 1,000 BTC</button>
+  <button class="dev-btn" id="d2">+ 10 GPU Miners</button>
+  <button class="dev-btn" id="d3">+ 10 ASIC Miners</button>
+  <button class="dev-btn" id="d4">+ 10 Mining Farms</button>
+  <button class="dev-btn" id="d5">&#9888; Reset All</button>
+  <span class="close-link" id="devClose">[close]</span>
+</div>
+<div class="toast" id="toast"></div>
+
+<script>
+// ===================== CONFIG =====================
+// Change this to your deployed backend URL after deploying to Render/Railway
+// Example: const API = 'https://your-app.onrender.com';
+const API = window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1'
+  ? 'http://localhost:3000'
+  : 'https://YOUR_BACKEND_URL_HERE'; // <-- replace this after deploying backend
+
+// ===================== STATE =====================
+const DEV_PW = "sillycars";
+const JOB_REWARD = 0.005999;
+const JOB_CD_MS = 30000;
+
+let btc = 0;
+let jobCds = [0,0,0,0];
+let keysHeld = new Set();
+let devUnlocked = false;
+let token = localStorage.getItem('btcToken') || null;
+let username = localStorage.getItem('btcUser') || null;
+let savets = null;
+
+const UPGRADES = [
+  {id:'gpu',  cost:10,   baseCost:10,   rate:0.001, owned:0},
+  {id:'asic', cost:100,  baseCost:100,  rate:0.01,  owned:0},
+  {id:'farm', cost:1000, baseCost:1000, rate:0.1,   owned:0}
+];
+
+const TROLL = {
+  laser:   {owned:false, clickBonus:0.000005, cost:50},
+  diamond: {owned:false, clickMult:1.5,       cost:200},
+  rocket:  {owned:false, rateMult:2,           cost:5000},
+  wojak:   {owned:false, passiveBonus:0.01,    cost:300},
+  rug:     {owned:false, passiveBonus:5,        cost:10000}
+};
+
+function getClickValue() {
+  let base = 0.000001;
+  if (TROLL.laser.owned) base += TROLL.laser.clickBonus;
+  if (TROLL.diamond.owned) base *= TROLL.diamond.clickMult;
+  return base;
+}
+function getRate() {
+  let r = UPGRADES[0].owned*0.001 + UPGRADES[1].owned*0.01 + UPGRADES[2].owned*0.1;
+  if (TROLL.wojak.owned) r += TROLL.wojak.passiveBonus;
+  if (TROLL.rug.owned) r += TROLL.rug.passiveBonus;
+  if (TROLL.rocket.owned) r *= TROLL.rocket.rateMult;
+  return r;
+}
+
+// ===================== RENDER =====================
+function render() {
+  document.getElementById('btcCount').textContent = btc.toFixed(8) + ' BTC';
+  document.getElementById('rateDisp').textContent = getRate().toFixed(6);
+  UPGRADES.forEach(u => {
+    document.getElementById(u.id+'Owned').textContent = '('+u.owned+')';
+    document.getElementById(u.id+'Cost').textContent = 'Cost: '+u.cost.toFixed(2)+' BTC';
+    const bid = 'buy'+u.id.charAt(0).toUpperCase()+u.id.slice(1);
+    document.getElementById(bid).disabled = btc < u.cost;
+  });
+  // troll store buttons
+  document.getElementById('buyLaser').disabled   = TROLL.laser.owned   || btc < TROLL.laser.cost;
+  document.getElementById('buyDiamond').disabled = TROLL.diamond.owned || btc < TROLL.diamond.cost;
+  document.getElementById('buyElon').disabled    = btc < 999;
+  document.getElementById('buyRocket').disabled  = TROLL.rocket.owned  || btc < TROLL.rocket.cost;
+  document.getElementById('buyWojak').disabled   = TROLL.wojak.owned   || btc < TROLL.wojak.cost;
+  document.getElementById('buyRug').disabled     = TROLL.rug.owned     || btc < TROLL.rug.cost;
+  document.getElementById('ownLaser').textContent   = TROLL.laser.owned   ? '✓ ' : '';
+  document.getElementById('ownDiamond').textContent = TROLL.diamond.owned ? '✓ ' : '';
+  document.getElementById('ownRocket').textContent  = TROLL.rocket.owned  ? '✓ ' : '';
+  document.getElementById('ownWojak').textContent   = TROLL.wojak.owned   ? '✓ ' : '';
+  document.getElementById('ownRug').textContent     = TROLL.rug.owned     ? '✓ ' : '';
+  // laser eyes effect on coin
+  document.getElementById('coin').textContent = TROLL.laser.owned ? '😤' : '₿';
+}
+
+function toast(msg) {
+  const t = document.getElementById('toast');
+  t.textContent = msg; t.classList.add('show');
+  clearTimeout(t._t); t._t = setTimeout(()=>t.classList.remove('show'), 2000);
+}
+
+// ===================== AUTH =====================
+function switchAuthTab(tab) {
+  document.getElementById('loginForm').style.display    = tab==='login'    ? '' : 'none';
+  document.getElementById('registerForm').style.display = tab==='register' ? '' : 'none';
+  document.getElementById('tabLogin').classList.toggle('active',    tab==='login');
+  document.getElementById('tabRegister').classList.toggle('active', tab==='register');
+  document.getElementById('loginErr').textContent = '';
+  document.getElementById('regErr').textContent = '';
+}
+
+async function apiPost(path, body, useToken) {
+  const headers = {'Content-Type':'application/json'};
+  if (useToken && token) headers['Authorization'] = 'Bearer '+token;
+  const r = await fetch(API+path, {method:'POST', headers, body:JSON.stringify(body)});
+  return r.json();
+}
+async function apiGet(path) {
+  const r = await fetch(API+path);
+  return r.json();
+}
+
+document.getElementById('loginBtn').addEventListener('click', async () => {
+  const u = document.getElementById('loginUser').value.trim();
+  const p = document.getElementById('loginPass').value;
+  if (!u||!p) { document.getElementById('loginErr').textContent='Fill in all fields'; return; }
+  try {
+    const d = await apiPost('/api/login', {username:u, password:p});
+    if (d.error) { document.getElementById('loginErr').textContent = d.error; return; }
+    onLogin(d);
+  } catch(e) { document.getElementById('loginErr').textContent = 'Cannot reach server. Is the backend running?'; }
+});
+
+document.getElementById('registerBtn').addEventListener('click', async () => {
+  const u  = document.getElementById('regUser').value.trim();
+  const p  = document.getElementById('regPass').value;
+  const p2 = document.getElementById('regPass2').value;
+  if (!u||!p||!p2) { document.getElementById('regErr').textContent='Fill in all fields'; return; }
+  if (p !== p2)    { document.getElementById('regErr').textContent='Passwords do not match'; return; }
+  try {
+    const d = await apiPost('/api/register', {username:u, password:p});
+    if (d.error) { document.getElementById('regErr').textContent = d.error; return; }
+    onLogin(d);
+  } catch(e) { document.getElementById('regErr').textContent = 'Cannot reach server. Is the backend running?'; }
+});
+
+// Enter key support
+['loginPass','loginUser'].forEach(id => {
+  document.getElementById(id).addEventListener('keydown', e => { if(e.key==='Enter') document.getElementById('loginBtn').click(); });
+});
+['regUser','regPass','regPass2'].forEach(id => {
+  document.getElementById(id).addEventListener('keydown', e => { if(e.key==='Enter') document.getElementById('registerBtn').click(); });
+});
+
+function onLogin(d) {
+  token    = d.token;
+  username = d.username;
+  localStorage.setItem('btcToken', token);
+  localStorage.setItem('btcUser',  username);
+  btc = d.btc || 0;
+  if (d.gpu  !== undefined) UPGRADES[0].owned = d.gpu;
+  if (d.asic !== undefined) UPGRADES[1].owned = d.asic;
+  if (d.farm !== undefined) UPGRADES[2].owned = d.farm;
+  // recalculate costs from owned
+  UPGRADES.forEach((u,i) => {
+    u.cost = u.baseCost;
+    for(let j=0;j<u.owned;j++) u.cost = Math.ceil(u.cost*1.15*100)/100;
+  });
+  document.getElementById('authScreen').style.display = 'none';
+  document.getElementById('gameScreen').style.display = '';
+  document.getElementById('usernameDisplay').textContent = username;
+  render();
+  loadLeaderboard();
+  loadOnline();
+  toast('Welcome back, '+username+'!');
+}
+
+document.getElementById('logoutBtn').addEventListener('click', () => {
+  token = null; username = null;
+  localStorage.removeItem('btcToken'); localStorage.removeItem('btcUser');
+  btc=0; UPGRADES.forEach((u,i)=>{u.owned=0;u.cost=u.baseCost;}); jobCds=[0,0,0,0];
+  Object.keys(TROLL).forEach(k=>TROLL[k].owned=false);
+  document.getElementById('authScreen').style.display = '';
+  document.getElementById('gameScreen').style.display = 'none';
+  toast('Logged out');
+});
+
+// ===================== SAVE =====================
+async function saveGame() {
+  if (!token) return;
+  try {
+    await apiPost('/api/save', {
+      btc, gpu:UPGRADES[0].owned, asic:UPGRADES[1].owned, farm:UPGRADES[2].owned
+    }, true);
+    savets = Date.now();
+    document.getElementById('saveTime').textContent = 'Last saved: '+new Date(savets).toLocaleTimeString();
+    toast('Saved to server!');
+  } catch(e) { toast('Save failed - check connection'); }
+}
+
+function resetGame() {
+  if (!confirm('Reset all progress?')) return;
+  btc=0; UPGRADES.forEach((u,i)=>{u.owned=0;u.cost=u.baseCost;}); jobCds=[0,0,0,0];
+  Object.keys(TROLL).forEach(k=>TROLL[k].owned=false);
+  savets=null; document.getElementById('saveTime').textContent='Not saved yet';
+  render(); toast('Reset!');
+}
+
+// ===================== LEADERBOARD =====================
+async function loadLeaderboard() {
+  try {
+    const rows = await apiGet('/api/leaderboard');
+    const el = document.getElementById('leaderboardList');
+    if (!rows.length) { el.innerHTML='<div class="lb-empty">No players yet!</div>'; return; }
+    el.innerHTML = rows.map((r,i) =>
+      `<div class="lb-row">
+        <span class="lb-rank">#${i+1}</span>
+        <span class="lb-name ${r.username===username?'lb-you':''}">${r.username===username?'★ ':''} ${escHtml(r.username)}</span>
+        <span class="lb-btc">${parseFloat(r.btc).toFixed(4)} BTC</span>
+      </div>`
+    ).join('');
+  } catch(e) { document.getElementById('leaderboardList').innerHTML='<div class="lb-empty">Could not load leaderboard</div>'; }
+}
+
+// ===================== ONLINE =====================
+async function loadOnline() {
+  try {
+    const rows = await apiGet('/api/online');
+    const el = document.getElementById('onlineList');
+    document.getElementById('onlineCount').textContent = rows.length ? '('+rows.length+' online)' : '';
+    if (!rows.length) { el.innerHTML='<div class="lb-empty">No one else online right now</div>'; return; }
+    el.innerHTML = rows.map(r =>
+      `<div class="online-row">
+        <span class="online-dot"></span>
+        <span class="online-name ${r.username===username?'lb-you':''}">${escHtml(r.username)}</span>
+        <span class="online-btc">${parseFloat(r.btc).toFixed(4)} BTC</span>
+      </div>`
+    ).join('');
+  } catch(e) { document.getElementById('onlineList').innerHTML='<div class="lb-empty">Could not load online players</div>'; }
+}
+
+function escHtml(s) { return s.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;'); }
+
+// ===================== GAME LOGIC =====================
+document.getElementById('coin').addEventListener('click', () => { btc += getClickValue(); render(); });
+
+document.getElementById('buyGpu').addEventListener('click', () => {
+  if(btc>=UPGRADES[0].cost){btc-=UPGRADES[0].cost;UPGRADES[0].owned++;UPGRADES[0].cost=Math.ceil(UPGRADES[0].cost*1.15*100)/100;render();toast('GPU added!');}
+});
+document.getElementById('buyAsic').addEventListener('click', () => {
+  if(btc>=UPGRADES[1].cost){btc-=UPGRADES[1].cost;UPGRADES[1].owned++;UPGRADES[1].cost=Math.ceil(UPGRADES[1].cost*1.15*100)/100;render();toast('ASIC added!');}
+});
+document.getElementById('buyFarm').addEventListener('click', () => {
+  if(btc>=UPGRADES[2].cost){btc-=UPGRADES[2].cost;UPGRADES[2].owned++;UPGRADES[2].cost=Math.ceil(UPGRADES[2].cost*1.15*100)/100;render();toast('Farm added!');}
+});
+
+// Jobs
+for(let i=0;i<4;i++){
+  document.getElementById('job'+i).addEventListener('click',(function(idx){return function(){
+    const now=Date.now();
+    if(now<jobCds[idx]){toast('Wait '+Math.ceil((jobCds[idx]-now)/1000)+'s!');return;}
+    btc+=JOB_REWARD; jobCds[idx]=now+JOB_CD_MS; render(); toast('+0.005999 BTC!');
+  };})(i));
+}
+
+// Troll Store
+document.getElementById('buyLaser').addEventListener('click', () => {
+  if(btc>=TROLL.laser.cost&&!TROLL.laser.owned){btc-=TROLL.laser.cost;TROLL.laser.owned=true;render();toast('Laser eyes activated! 😤');}
+});
+document.getElementById('buyDiamond').addEventListener('click', () => {
+  if(btc>=TROLL.diamond.cost&&!TROLL.diamond.owned){btc-=TROLL.diamond.cost;TROLL.diamond.owned=true;render();toast('💎 Diamond hands equipped!');}
+});
+document.getElementById('buyElon').addEventListener('click', () => {
+  if(btc>=999){btc-=999;btc+=500;render();toast('🐦 Elon tweeted! +500 BTC pumped!');}
+});
+document.getElementById('buyRocket').addEventListener('click', () => {
+  if(btc>=TROLL.rocket.cost&&!TROLL.rocket.owned){btc-=TROLL.rocket.cost;TROLL.rocket.owned=true;render();toast('🚀 To the moon! Rate x2!');}
+});
+document.getElementById('buyWojak').addEventListener('click', () => {
+  if(btc>=TROLL.wojak.cost&&!TROLL.wojak.owned){btc-=TROLL.wojak.cost;TROLL.wojak.owned=true;render();toast('🥲 Crying profitably...');}
+});
+document.getElementById('buyRug').addEventListener('click', () => {
+  if(btc>=TROLL.rug.cost&&!TROLL.rug.owned){btc-=TROLL.rug.cost;TROLL.rug.owned=true;render();toast('🧹 Rug Pull Insurance secured!');}
+});
+
+// Save / Reset
+document.getElementById('saveBtn').addEventListener('click', saveGame);
+document.getElementById('resetBtn').addEventListener('click', resetGame);
+document.getElementById('refreshLb').addEventListener('click', ()=>{loadLeaderboard();loadOnline();});
+
+// ===================== DEV CONSOLE =====================
+function openOverlay(id){ document.getElementById(id).classList.add('open'); document.getElementById('overlayBg').classList.add('open'); }
+function closeAll(){ ['pwModal','devModal','overlayBg'].forEach(i=>document.getElementById(i).classList.remove('open')); }
+document.getElementById('overlayBg').addEventListener('click', closeAll);
+document.addEventListener('keydown', e=>{
+  keysHeld.add(e.key==='.'?'dot':e.key);
+  if(keysHeld.has('Control')&&keysHeld.has('dot')&&keysHeld.has('[')){
+    if(!document.getElementById('gameScreen').style.display||document.getElementById('gameScreen').style.display==='none') return;
+    if(devUnlocked){ openOverlay('devModal'); }
+    else{ document.getElementById('pwInput').value=''; document.getElementById('pwErr').textContent=''; openOverlay('pwModal'); setTimeout(()=>document.getElementById('pwInput').focus(),50); }
+  }
+});
+document.addEventListener('keyup', e=>keysHeld.delete(e.key==='.'?'dot':e.key));
+document.getElementById('pwSubmit').addEventListener('click',()=>{
+  if(document.getElementById('pwInput').value===DEV_PW){devUnlocked=true;closeAll();openOverlay('devModal');}
+  else{document.getElementById('pwErr').textContent='Wrong password.';}
+});
+document.getElementById('pwInput').addEventListener('keydown',e=>{ if(e.key==='Enter') document.getElementById('pwSubmit').click(); });
+document.getElementById('d1').addEventListener('click',()=>{btc+=1000;render();toast('+1000 BTC');});
+document.getElementById('d2').addEventListener('click',()=>{UPGRADES[0].owned+=10;render();toast('+10 GPUs');});
+document.getElementById('d3').addEventListener('click',()=>{UPGRADES[1].owned+=10;render();toast('+10 ASICs');});
+document.getElementById('d4').addEventListener('click',()=>{UPGRADES[2].owned+=10;render();toast('+10 Farms');});
+document.getElementById('d5').addEventListener('click',()=>{resetGame();closeAll();});
+document.getElementById('devClose').addEventListener('click',closeAll);
+
+// ===================== INTERVALS =====================
+setInterval(()=>{ if(token){ btc+=getRate()/20; render(); } },50);
+setInterval(()=>{
+  const now=Date.now();
+  for(let i=0;i<4;i++){
+    const el=document.getElementById('jcd'+i);
+    if(!el) continue;
+    if(now>=jobCds[i]){el.textContent='Ready';el.style.color='#4caf50';}
+    else{el.textContent=Math.ceil((jobCds[i]-now)/1000)+'s';el.style.color='#aaa';}
+  }
+},500);
+// Auto-save every 60s
+setInterval(()=>{ if(token) saveGame(); }, 60000);
+// Heartbeat every 30s (keeps you appearing online)
+setInterval(async()=>{
+  if(!token) return;
+  try{ await apiPost('/api/heartbeat',{},true); } catch(e){}
+},30000);
+// Refresh leaderboard & online every 15s
+setInterval(()=>{ if(token){ loadLeaderboard(); loadOnline(); } },15000);
+
+// ===================== INIT =====================
+// Show server URL hint
+document.getElementById('serverNote').textContent = 'Backend: '+API;
+
+// Auto-login if token saved
+if (token && username) {
+  // Try to restore session by doing a quick heartbeat check
+  (async()=>{
+    try {
+      const r = await fetch(API+'/api/heartbeat', {method:'POST', headers:{'Content-Type':'application/json','Authorization':'Bearer '+token}, body:'{}'});
+      if(r.ok){
+        // token valid - show game with cached data
+        document.getElementById('authScreen').style.display = 'none';
+        document.getElementById('gameScreen').style.display = '';
+        document.getElementById('usernameDisplay').textContent = username;
+        render(); loadLeaderboard(); loadOnline();
+        toast('Welcome back, '+username+'!');
+      } else {
+        // token expired
+        localStorage.removeItem('btcToken'); localStorage.removeItem('btcUser');
+        token=null; username=null;
+      }
+    } catch(e) { /* server offline, show auth */ }
+  })();
+}
+</script>
+</body>
+</html>
